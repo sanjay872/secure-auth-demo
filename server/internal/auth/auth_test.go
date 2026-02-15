@@ -1,4 +1,4 @@
-package main
+package auth
 
 import (
 	"testing"
@@ -6,6 +6,8 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 )
+
+var testSecret = []byte("test-secret-key")
 
 func TestJWTCreationAndValidation(t *testing.T) {
 
@@ -15,14 +17,14 @@ func TestJWTCreationAndValidation(t *testing.T) {
 		"exp": time.Now().Add(1 * time.Minute).Unix(),
 	})
 
-	tokenString, err := token.SignedString(jwtSecret)
+	tokenString, err := token.SignedString(testSecret)
 	if err != nil {
 		t.Fatalf("Failed to sign token: %v", err)
 	}
 
 	// Parse token
 	parsedToken, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-		return jwtSecret, nil
+		return testSecret, nil
 	})
 
 	if err != nil {
@@ -47,10 +49,10 @@ func TestExpiredJWT(t *testing.T) {
 		"exp": time.Now().Add(-1 * time.Minute).Unix(),
 	})
 
-	tokenString, _ := token.SignedString(jwtSecret)
+	tokenString, _ := token.SignedString(testSecret)
 
 	parsedToken, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-		return jwtSecret, nil
+		return testSecret, nil
 	})
 
 	if err == nil && parsedToken.Valid {

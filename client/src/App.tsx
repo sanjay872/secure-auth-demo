@@ -9,22 +9,37 @@ import api, { setAccessToken } from "./api/axios";
 export default function App() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [status, setStatus] = useState("");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [profile, setProfile] = useState<any>(null);
+  const [toast, setToast] = useState<string | null>(null);
+
+  function showToast(message: string) {
+    setToast(message);
+    setTimeout(() => setToast(null), 3000);
+  }
+
+  function resetForm() {
+    setEmail("");
+    setPassword("");
+  }
 
   async function handleSignUp() {
-    setStatus("Signing up...");
     try {
       await createUserWithEmailAndPassword(auth, email, password);
-      setStatus("Signed up successfully ✅");
+      resetForm();
+      showToast("Account created successfully 🎉 Please login.");
     } catch (e: any) {
-      setStatus(e.message);
+      if (e.code === "auth/email-already-in-use") {
+        showToast("User already exists ❌");
+      } else if (e.code === "auth/weak-password") {
+        showToast("Password should be at least 6 characters ⚠️");
+      } else {
+        showToast("Signup failed ❌");
+      }
     }
   }
 
   async function handleSignIn() {
-    setStatus("Signing in...");
     try {
       const cred = await signInWithEmailAndPassword(auth, email, password);
       const idToken = await cred.user.getIdToken();
@@ -39,10 +54,24 @@ export default function App() {
       setProfile(profileRes.data);
 
       setIsAuthenticated(true);
-      setStatus("");
-
+      resetForm();
+      showToast("Login successful ✅");
     } catch (e: any) {
-      setStatus(e.message || "Sign in failed");
+      if (e.code === "auth/invalid-credential") {
+        showToast("Incorrect email or password ❌");
+      } else {
+        showToast("Login failed ❌");
+      }
+    }
+  }
+
+  async function reloadProfile() {
+    try {
+      const res = await api.get("/profile");
+      setProfile(res.data);
+      showToast("Profile reloaded 🔄");
+    } catch (err) {
+      showToast("Session expired ❌");
     }
   }
 
@@ -52,21 +81,23 @@ export default function App() {
       setAccessToken(null);
       setIsAuthenticated(false);
       setProfile(null);
-      setEmail("");
-      setPassword("");
-      setStatus("Logged out successfully ✅");
-    } catch (err) {
-      console.error(err);
-      setStatus("Logout failed ❌");
+      showToast("Logged out successfully 👋");
+    } catch {
+      showToast("Logout failed ❌");
     }
   }
 
-  // ----------------------------
-  // PROFILE PAGE
-  // ----------------------------
+  // ---------------- PROFILE PAGE ----------------
+
   if (isAuthenticated && profile) {
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center relative">
+        {toast && (
+          <div className="absolute top-6 bg-black text-white px-6 py-2 rounded-lg shadow-lg">
+            {toast}
+          </div>
+        )}
+
         <div className="bg-white shadow-xl rounded-xl p-8 w-full max-w-md space-y-4">
           <h2 className="text-2xl font-semibold text-center">
             Profile Page 🔐
@@ -82,22 +113,36 @@ export default function App() {
             <p className="font-medium">{profile.message}</p>
           </div>
 
-          <button
-            onClick={handleLogout}
-            className="w-full bg-red-600 hover:bg-red-700 text-white rounded-lg py-2 transition"
-          >
-            Logout
-          </button>
+          <div className="flex gap-3">
+            <button
+              onClick={reloadProfile}
+              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg py-2 transition"
+            >
+              Reload Profile
+            </button>
+
+            <button
+              onClick={handleLogout}
+              className="flex-1 bg-red-600 hover:bg-red-700 text-white rounded-lg py-2 transition"
+            >
+              Logout
+            </button>
+          </div>
         </div>
       </div>
     );
   }
 
-  // ----------------------------
-  // LOGIN PAGE
-  // ----------------------------
+  // ---------------- LOGIN PAGE ----------------
+
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+    <div className="min-h-screen bg-gray-100 flex items-center justify-center relative">
+      {toast && (
+        <div className="absolute top-6 bg-black text-white px-6 py-2 rounded-lg shadow-lg">
+          {toast}
+        </div>
+      )}
+
       <div className="bg-white shadow-xl rounded-xl p-8 w-full max-w-md">
         <h2 className="text-2xl font-semibold text-center mb-6">
           Secure Auth Demo
@@ -134,12 +179,6 @@ export default function App() {
               Sign In
             </button>
           </div>
-
-          {status && (
-            <p className="text-sm text-center text-gray-600 mt-3">
-              {status}
-            </p>
-          )}
         </div>
       </div>
     </div>
