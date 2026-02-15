@@ -125,14 +125,6 @@ Frontend and backend are independent applications within a single repository.
 
 ---
 
-Good catch — yes, the frontend `.env` absolutely needs to be documented. Especially since you're using Firebase and possibly a backend base URL.
-
-Here is the updated README section with both **backend and frontend environment configuration** clearly explained.
-
-You can replace the **Environment Configuration** section with this.
-
----
-
 ## Environment Configuration
 
 ### Backend (.env)
@@ -262,6 +254,8 @@ Backend runs on:
 ---
 
 ### Frontend
+
+Create `.env`
 
 ```
 cd client
